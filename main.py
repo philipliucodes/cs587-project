@@ -431,12 +431,22 @@ for epoch in count(0):
     pl_result[epoch, 2, 0] = time_current
     np.save(result_path + "_pl", pl_result)
 
-    out_str = (
-        f"Epoch {epoch} | "
-        f"tr_loss={train_loss:.3f} tr_acc={train_acc:.2f} | "
-        f"te_loss={test_loss:.3f} te_acc={test_acc:.2f} | "
-        f"time={time_current:.1f}"
-    )
+    if args.method == 1:
+        out_str = (
+            f"Epoch {epoch} | "
+            f"q={ssize} | "
+            f"tr_loss={train_loss:.3f} tr_acc={train_acc:.2f} | "
+            f"te_loss={test_loss:.3f} te_acc={test_acc:.2f} | "
+            f"time={time_current:.1f}"
+        )
+    else:
+        out_str = (
+            f"Epoch {epoch} | "
+            f"tr_loss={train_loss:.3f} tr_acc={train_acc:.2f} | "
+            f"te_loss={test_loss:.3f} te_acc={test_acc:.2f} | "
+            f"time={time_current:.1f}"
+        )
+        
     print(out_str)
     filep.write(out_str + "\n")
 
