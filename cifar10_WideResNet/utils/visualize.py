@@ -1,9 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
 import torchvision
-import torchvision.transforms as transforms
-import numpy as np
 from .misc import *   
 
 __all__ = ['make_image', 'show_batch', 'show_mask', 'show_mask_single']
@@ -21,7 +18,7 @@ def gauss(x,a,b,c):
 def colorize(x):
     ''' Converts a one-channel grayscale image to a color heatmap image '''
     if x.dim() == 2:
-        torch.unsqueeze(x, 0, out=x)
+        x = x.unsqueeze(0)
     if x.dim() == 3:
         cl = torch.zeros([3, x.size(1), x.size(2)])
         cl[0] = gauss(x,.5,.6,.2) + gauss(x,1,.8,.3)
@@ -84,12 +81,12 @@ def show_mask(images, masklist, Mean=(2, 2, 2), Std=(0.5,0.5,0.5)):
     plt.axis('off')
 
     for i in range(len(masklist)):
-        mask = masklist[i].data.cpu()
+        mask = masklist[i].detach().cpu()
         # for b in range(mask.size(0)):
         #     mask[b] = (mask[b] - mask[b].min())/(mask[b].max() - mask[b].min())
         mask_size = mask.size(2)
         # print('Max %f Min %f' % (mask.max(), mask.min()))
-        mask = (upsampling(mask, scale_factor=im_size/mask_size))
+        mask = upsampling(mask.detach().cpu(), scale_factor=im_size / mask_size)
         # mask = colorize(upsampling(mask, scale_factor=im_size/mask_size))
         # for c in range(3):
         #     mask[:,c,:,:] = (mask[:,c,:,:] - Mean[c])/Std[c]

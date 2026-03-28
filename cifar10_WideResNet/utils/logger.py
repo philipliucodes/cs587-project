@@ -11,11 +11,11 @@ import numpy as np
 __all__ = ['Logger', 'LoggerMonitor', 'savefig']
 
 def savefig(fname, dpi=None):
-    dpi = 150 if dpi == None else dpi
+    dpi = 150 if dpi is None else dpi
     plt.savefig(fname, dpi=dpi)
     
 def plot_overlap(logger, names=None):
-    names = logger.names if names == None else names
+    names = logger.names if names is None else names
     numbers = logger.numbers
     for _, name in enumerate(names):
         x = np.arange(len(numbers[name]))
@@ -30,7 +30,7 @@ class Logger(object):
     def __init__(self, fpath, title=None, resume=False): 
         self.file = None
         self.resume = resume
-        self.title = '' if title == None else title
+        self.title = '' if title is None else title
         if fpath is not None:
             if resume: 
                 self.file = open(fpath, 'r') 
@@ -43,7 +43,7 @@ class Logger(object):
                 for numbers in self.file:
                     numbers = numbers.rstrip().split('\t')
                     for i in range(0, len(numbers)):
-                        self.numbers[self.names[i]].append(numbers[i])
+                        self.numbers[self.names[i]].append(float(numbers[i]))
                 self.file.close()
                 self.file = open(fpath, 'a')  
             else:
@@ -100,7 +100,6 @@ class LoggerMonitor(object):
         legend_text = []
         for logger in self.loggers:
             legend_text += plot_overlap(logger, names)
-        legend_text = ['WRN-28-10+Ours (error 17.65%)', 'WRN-28-10 (error 18.68%)']
         plt.legend(legend_text, loc=0)
         plt.ylabel('test error (%)')
         plt.xlabel('epoch')

@@ -1,9 +1,7 @@
 from __future__ import absolute_import
 
-from torchvision.transforms import *
-
-import numpy as np
-import torch
+import math
+import random
 
 class RandomErasing(object):
     def __init__(self, EPSILON = 0.5, sl = 0.02, sh = 0.4, r1 = 0.3, mean=[0.4914, 0.4822, 0.4465]):
