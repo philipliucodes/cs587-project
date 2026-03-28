@@ -47,18 +47,16 @@ data_path = args.data_path + args.dataset
 if not os.path.isdir(data_path):
     os.makedirs(data_path)
 
-result_path = "./results/"
-if not os.path.isdir(result_path):
-    os.makedirs(result_path)
-result_path += args.dataset + "_" + str(args.data_aug) + "_" + args.model
-result_path += "_" + str(args.method) + "_" + str(args.batch_size)
-if args.method != 0:
-    result_path += "_" + str(args.ssize)
-result_path += "_" + str(args.job_id)
+result_path = (
+    f"./results/{args.dataset}_{args.model}_"
+    f"method{args.method}_bs{args.batch_size}"
+)
+
+if args.method == 1:
+    result_path += f"_ssize{args.ssize}"
+
+result_path += f"_job{args.job_id}"
 filep = open(result_path + ".txt", "w")
-with open(__file__) as f:
-    filep.write("\n".join(f.read().split("\n")[1:]))
-filep.write("\n\n")
 
 out_str = str(args)
 print(out_str)
@@ -348,10 +346,7 @@ def train(epoch):
     model.train()
     optimizer = lr_scheduler(optimizer, epoch)
 
-    if epoch == 0:
-        train_acc_prev = 0
-    else:
-        train_acc_prev = pl_result[epoch - 1, 0, 1]
+    train_acc_prev = pl_result[epoch - 1, 0, 1]
     if train_acc_prev >= 99.5 and ssize > 4:
         ssize = 4
         optimizer = lr_decay_func(optimizer, lr_decay=0.5)
@@ -391,6 +386,7 @@ def output(data_loader):
         model.train()
     elif data_loader == test_loader:
         model.eval()
+
     total_loss = 0
     total_correct = 0
     total_size = 0
@@ -406,16 +402,10 @@ def output(data_loader):
                 total_loss += F.cross_entropy(h1, y).item() * y.size(0)
             total_correct += y_hat.eq(y).sum().item()
             total_size += y.size(0)
-    # print
+
     total_loss /= total_size
-    total_acc = 100.0 * float(total_correct) / float(total_size)
-    if data_loader == train_loader:
-        out_str = "tr_l={:.3f} tr_a={:.2f}:".format(total_loss, total_acc)
-    elif data_loader == test_loader:
-        out_str = "te_l={:.3f} te_a={:.2f}:".format(total_loss, total_acc)
-    print(out_str, end=" ")
-    filep.write(out_str + " ")
-    return (total_loss, total_acc)
+    total_acc = 100.0 * total_correct / total_size
+    return total_loss, total_acc
 
 
 # ===============================================================
@@ -428,18 +418,27 @@ pl_result = np.zeros(
 # == main loop start
 time_start = time.time()
 for epoch in count(0):
-    out_str = str(epoch)
-    print(out_str, end=" ")
-    filep.write(out_str + " ")
     if epoch >= 1:
         train(epoch)
-    pl_result[epoch, 0, :] = output(train_loader)
-    pl_result[epoch, 1, :] = output(test_loader)
+
+    train_loss, train_acc = output(train_loader)
+    test_loss, test_acc = output(test_loader)
+
+    pl_result[epoch, 0, :] = (train_loss, train_acc)
+    pl_result[epoch, 1, :] = (test_loss, test_acc)
+
     time_current = time.time() - time_start
     pl_result[epoch, 2, 0] = time_current
-    np.save(result_path + "_" + "pl", pl_result)
-    out_str = "time={:.1f}:".format(time_current)
+    np.save(result_path + "_pl", pl_result)
+
+    out_str = (
+        f"Epoch {epoch} | "
+        f"tr_loss={train_loss:.3f} tr_acc={train_acc:.2f} | "
+        f"te_loss={test_loss:.3f} te_acc={test_acc:.2f} | "
+        f"time={time_current:.1f}"
+    )
     print(out_str)
     filep.write(out_str + "\n")
+
     if epoch == end_epoch:
         break
