@@ -13,3 +13,5 @@ python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=0
 
 Ordered SGD
 python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=1
+
+## Refer to the scripts/ folder to use preset configs and commands for each experiment
