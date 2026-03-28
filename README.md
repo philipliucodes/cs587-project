@@ -14,6 +14,8 @@ python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=0
 Ordered SGD
 python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=1
 
+the ones below here are performing terribly, need use hyperparameters or implement some kind of scheduling probably
+
 KL-DRO/exponential
 python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=2
 

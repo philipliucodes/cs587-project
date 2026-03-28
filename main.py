@@ -48,8 +48,7 @@ if not os.path.isdir(data_path):
     os.makedirs(data_path)
 
 result_path = (
-    f"./results/{args.dataset}_{args.model}_"
-    f"method{args.method}_bs{args.batch_size}"
+    f"./results/{args.dataset}_{args.model}_" f"method{args.method}_bs{args.batch_size}"
 )
 
 if args.method == 1:
@@ -269,14 +268,14 @@ train_loader = torch.utils.data.DataLoader(
     batch_size=args.batch_size,
     sampler=train_Sampler,
     shuffle=Shuffle,
-    **kwargs
+    **kwargs,
 )
 test_loader = torch.utils.data.DataLoader(
     test_data,
     batch_size=args.test_batch_size,
     sampler=test_Sampler,
     shuffle=False,
-    **kwargs
+    **kwargs,
 )
 
 # ===============================================================
@@ -303,13 +302,13 @@ def select_training_loss(cr_loss, method, ssize):
     # standard SGD
     if method == 0:
         return torch.mean(cr_loss)
-    
+
     # ordered SGD: https://arxiv.org/abs/1907.04371
     elif method == 1:
         if ssize >= bs:
             return torch.mean(cr_loss)
         return torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
-    
+
     # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure)
     elif method == 2:
         tau = 1.0  # hyperparameter
@@ -325,17 +324,17 @@ def select_training_loss(cr_loss, method, ssize):
         weights = torch.relu(z)
         weights = weights / (weights.sum() + 1e-8)
         return torch.sum(weights * cr_loss)
-    
+
     # focal weighting: idea, basically weighting harder samples more
     elif method == 5:
         gamma = 2.0
-        weights = (cr_loss ** gamma)
+        weights = cr_loss**gamma
         weights = weights / (weights.sum() + 1e-8)
         return torch.sum(weights * cr_loss)
 
     else:
         raise ValueError(f"Unknown method: {method}")
-    
+
 
 def lr_decay_func(optimizer, lr_decay=0.1):
     for param_group in optimizer.param_groups:
