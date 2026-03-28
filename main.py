@@ -297,6 +297,46 @@ else:
 # ===============================================================
 # === utils def
 # ===============================================================
+def select_training_loss(cr_loss, method, ssize):
+    bs = cr_loss.size(0)
+
+    # standard SGD
+    if method == 0:
+        return torch.mean(cr_loss)
+    
+    # ordered SGD: https://arxiv.org/abs/1907.04371
+    elif method == 1:
+        if ssize >= bs:
+            return torch.mean(cr_loss)
+        return torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
+    
+    # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure)
+    elif method == 2:
+        tau = 1.0  # hyperparameter
+        weights = torch.exp(cr_loss / tau)
+        weights = weights / weights.sum()
+        return torch.sum(weights * cr_loss)
+
+    # z-score weighting: ours
+    elif method == 3:
+        mean = cr_loss.mean()
+        std = cr_loss.std() + 1e-8
+        z = (cr_loss - mean) / std
+        weights = torch.relu(z)
+        weights = weights / (weights.sum() + 1e-8)
+        return torch.sum(weights * cr_loss)
+    
+    # focal weighting: idea, basically weighting harder samples more
+    elif method == 5:
+        gamma = 2.0
+        weights = (cr_loss ** gamma)
+        weights = weights / (weights.sum() + 1e-8)
+        return torch.sum(weights * cr_loss)
+
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
+
 def lr_decay_func(optimizer, lr_decay=0.1):
     for param_group in optimizer.param_groups:
         param_group["lr"] *= 0.1
@@ -358,7 +398,6 @@ def train(epoch):
         ssize = 32
 
     for batch_idx, (x, y) in enumerate(train_loader):
-        bs = y.size(0)
         x = x.to(device)
         y = y.to(device)
         h1 = model(x)
@@ -366,13 +405,9 @@ def train(epoch):
             cr_loss = hinge_loss(h1, y)
         else:
             cr_loss = F.cross_entropy(h1, y, reduction="none")
-        if args.method == 0 or ssize >= bs:
-            loss = torch.mean(cr_loss)
-        elif args.method == 1:
-            loss = torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
-        else:
-            print("specify method")
-            exit()
+
+        loss = select_training_loss(cr_loss, args.method, ssize)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -446,7 +481,7 @@ for epoch in count(0):
             f"te_loss={test_loss:.3f} te_acc={test_acc:.2f} | "
             f"time={time_current:.1f}"
         )
-        
+
     print(out_str)
     filep.write(out_str + "\n")
 

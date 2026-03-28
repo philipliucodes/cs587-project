@@ -14,4 +14,13 @@ python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=0
 Ordered SGD
 python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=1
 
+KL-DRO/exponential
+python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=2
+
+Z-score weighting
+python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=3
+
+Focal weighting
+python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=5
+
 ## Refer to the scripts/ folder to use preset configs and commands for each experiment
