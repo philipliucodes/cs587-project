@@ -309,11 +309,10 @@ def select_training_loss(cr_loss, method, ssize):
             return torch.mean(cr_loss)
         return torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
 
-    # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure)
+    # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure) (change to softmax? in the works)
     elif method == 2:
         tau = 1.0  # hyperparameter
-        weights = torch.exp(cr_loss / tau)
-        weights = weights / weights.sum()
+        weights = torch.softmax(cr_loss / tau, dim=0)
         return torch.sum(weights * cr_loss)
 
     # z-score weighting: ours
@@ -331,6 +330,14 @@ def select_training_loss(cr_loss, method, ssize):
         weights = cr_loss**gamma
         weights = weights / (weights.sum() + 1e-8)
         return torch.sum(weights * cr_loss)
+    
+    elif method == 6:  # rank-based
+        bs = cr_loss.size(0)
+        ranks = torch.argsort(torch.argsort(cr_loss)) + 1
+        weights = ranks.float() ** alpha
+        weights = weights / weights.sum()
+        return torch.sum(weights * cr_loss)
+
 
     else:
         raise ValueError(f"Unknown method: {method}")
