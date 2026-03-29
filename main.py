@@ -332,6 +332,7 @@ def select_training_loss(cr_loss, method, ssize):
         return torch.sum(weights * cr_loss)
     
     elif method == 6:  # rank-based
+        alpha = 2.0
         bs = cr_loss.size(0)
         ranks = torch.argsort(torch.argsort(cr_loss)) + 1
         weights = ranks.float() ** alpha
