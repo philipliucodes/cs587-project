@@ -26,3 +26,12 @@ Focal weighting
 python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=5
 
 ## Refer to the scripts/ folder to use preset configs and commands for each experiment
+
+## Standards and conventiosn for GitHub Versioning
+
+[version type]: [what the version did]
+
+- fix: Small change that has significance, not a bug fix but should be no more than a few lines
+- feat: Significant change, when something major is added, like a new method
+- wip: should only be done in branches, only do if you're logging off so that other people dont work off or merge a branch with a wip: tag at the end
+- bug: small bugfix, one line changes that have little significance
