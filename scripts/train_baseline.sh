@@ -12,6 +12,8 @@
 
 cd /home/$USER/scratch/cs587-project
 
+mkdir -p results
+
 ml conda
 conda activate ./env
 
