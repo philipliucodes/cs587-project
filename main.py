@@ -17,8 +17,32 @@ from models.models import *
 from models.preact_resnet import *
 
 from torchvision.utils import save_image
+from enum import IntEnum
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+# ================================================================
+# === Method Enum def
+# ===============================================================
+class Method(IntEnum):
+    SGD = 0
+    ORDERED = 1
+    KLDRO = 2
+    ZSCORE = 3
+    FOCAL = 5
+    RANKED = 6
+
+METHOD_NAME_MAP = {
+    "sgd": Method.SGD,
+    "ordered_sgd": Method.ORDERED,
+    "kl_dro": Method.KLDRO,
+    "z_score": Method.ZSCORE,
+    "focal": Method.FOCAL,
+    "rank_based": Method.RANKED,
+}
+
+METHOD_VALUE_TO_NAME = {v: k for k, v in METHOD_NAME_MAP.items()}
 
 # == parser start
 parser = argparse.ArgumentParser(description="PyTorch")
@@ -38,20 +62,30 @@ parser.add_argument("--model", type=str, default="LeNet")
 parser.add_argument("--lr", type=float, default=0.01)
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--ssize", type=int, default=64)
-parser.add_argument("--method", type=int, default=0)
-# --method=0: standard
-# --method=1: q-SGD
+parser.add_argument(
+    "--method",
+    type=str,
+    default="sgd",
+    choices=METHOD_NAME_MAP.keys(),
+    help=(
+        "Loss selection method: "
+        "sgd, ordered_sgd, kl_dro, z_score, focal, rank_based"
+    ),
+)
 args = parser.parse_args()
+args.method = METHOD_NAME_MAP[args.method]
 # == parser end
 data_path = args.data_path + args.dataset
 if not os.path.isdir(data_path):
     os.makedirs(data_path)
 
+method_name = METHOD_VALUE_TO_NAME[args.method]
+
 result_path = (
-    f"./results/{args.dataset}_{args.model}_" f"method{args.method}_bs{args.batch_size}"
+    f"./results/{args.dataset}_{args.model}_" f"{method_name}_bs{args.batch_size}"
 )
 
-if args.method == 1:
+if args.method == Method.ORDERED:
     result_path += f"_ssize{args.ssize}"
 
 result_path += f"_job{args.job_id}"
@@ -292,7 +326,6 @@ else:
     print("specify model")
     exit()
 
-
 # ===============================================================
 # === utils def
 # ===============================================================
@@ -300,23 +333,23 @@ def select_training_loss(cr_loss, method, ssize):
     bs = cr_loss.size(0)
 
     # standard SGD
-    if method == 0:
+    if method == Method.SGD:
         return torch.mean(cr_loss)
 
     # ordered SGD: https://arxiv.org/abs/1907.04371
-    elif method == 1:
+    elif method == Method.ORDERED:
         if ssize >= bs:
             return torch.mean(cr_loss)
         return torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
 
     # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure) (change to softmax? in the works)
-    elif method == 2:
+    elif method == Method.KLDRO:
         tau = 1.0  # hyperparameter
         weights = torch.softmax(cr_loss / tau, dim=0)
         return torch.sum(weights * cr_loss)
 
     # z-score weighting: ours
-    elif method == 3:
+    elif method == Method.ZSCORE:
         mean = cr_loss.mean()
         std = cr_loss.std() + 1e-8
         z = (cr_loss - mean) / std
@@ -325,13 +358,14 @@ def select_training_loss(cr_loss, method, ssize):
         return torch.sum(weights * cr_loss)
 
     # focal weighting: idea, basically weighting harder samples more
-    elif method == 5:
+    elif method == Method.FOCAL:
         gamma = 2.0
         weights = cr_loss**gamma
         weights = weights / (weights.sum() + 1e-8)
         return torch.sum(weights * cr_loss)
     
-    elif method == 6:  # rank-based
+    # Ranked based weighting: idea, basically weighting samples based on their rank in the loss distribution, with a power law decay
+    elif method == Method.RANKED:
         alpha = 2.0
         bs = cr_loss.size(0)
         ranks = torch.argsort(torch.argsort(cr_loss)) + 1
@@ -473,7 +507,7 @@ for epoch in count(0):
     pl_result[epoch, 2, 0] = time_current
     np.save(result_path + "_pl", pl_result)
 
-    if args.method == 1:
+    if args.method == Method.ORDERED:
         out_str = (
             f"Epoch {epoch} | "
             f"q={ssize} | "

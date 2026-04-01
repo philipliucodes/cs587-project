@@ -15,4 +15,4 @@ cd /home/$USER/scratch/cs587-project
 ml conda
 conda activate ./env
 
-python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=5
+python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=focal
