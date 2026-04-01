@@ -10,7 +10,7 @@
 #SBATCH -o slurm_logs/%x_%j.out
 #SBATCH -e slurm_logs/%x_%j.err
 
-cd /home/liu3688/scratch/cs587-project
+cd /home/$USER/scratch/cs587-project
 
 ml conda
 conda activate ./env
