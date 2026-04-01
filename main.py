@@ -17,32 +17,16 @@ from models.models import *
 from models.preact_resnet import *
 
 from torchvision.utils import save_image
-from enum import IntEnum
+
+from methods import (
+    Method,
+    METHOD_NAME_MAP,
+    parse_method,
+    method_name,
+    select_training_loss,
+)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-# ================================================================
-# === Method Enum def
-# ===============================================================
-class Method(IntEnum):
-    SGD = 0
-    ORDERED = 1
-    KLDRO = 2
-    ZSCORE = 3
-    FOCAL = 5
-    RANKED = 6
-
-METHOD_NAME_MAP = {
-    "sgd": Method.SGD,
-    "ordered_sgd": Method.ORDERED,
-    "kl_dro": Method.KLDRO,
-    "z_score": Method.ZSCORE,
-    "focal": Method.FOCAL,
-    "rank_based": Method.RANKED,
-}
-
-METHOD_VALUE_TO_NAME = {v: k for k, v in METHOD_NAME_MAP.items()}
 
 # == parser start
 parser = argparse.ArgumentParser(description="PyTorch")
@@ -73,16 +57,16 @@ parser.add_argument(
     ),
 )
 args = parser.parse_args()
-args.method = METHOD_NAME_MAP[args.method]
+args.method = parse_method(args.method)
 # == parser end
 data_path = args.data_path + args.dataset
 if not os.path.isdir(data_path):
     os.makedirs(data_path)
 
-method_name = METHOD_VALUE_TO_NAME[args.method]
+method_str = method_name(args.method)
 
 result_path = (
-    f"./results/{args.dataset}_{args.model}_" f"{method_name}_bs{args.batch_size}"
+    f"./results/{args.dataset}_{args.model}_{method_str}_bs{args.batch_size}"
 )
 
 if args.method == Method.ORDERED:
@@ -325,57 +309,6 @@ elif args.model == "Linear" or args.model == "SVM":
 else:
     print("specify model")
     exit()
-
-# ===============================================================
-# === utils def
-# ===============================================================
-def select_training_loss(cr_loss, method, ssize):
-    bs = cr_loss.size(0)
-
-    # standard SGD
-    if method == Method.SGD:
-        return torch.mean(cr_loss)
-
-    # ordered SGD: https://arxiv.org/abs/1907.04371
-    elif method == Method.ORDERED:
-        if ssize >= bs:
-            return torch.mean(cr_loss)
-        return torch.topk(cr_loss, k=min(ssize, bs))[0].mean()
-
-    # kl-dro/exponential weighting: https://arxiv.org/abs/1610.03425/ (not sure) (change to softmax? in the works)
-    elif method == Method.KLDRO:
-        tau = 1.0  # hyperparameter
-        weights = torch.softmax(cr_loss / tau, dim=0)
-        return torch.sum(weights * cr_loss)
-
-    # z-score weighting: ours
-    elif method == Method.ZSCORE:
-        mean = cr_loss.mean()
-        std = cr_loss.std() + 1e-8
-        z = (cr_loss - mean) / std
-        weights = torch.relu(z)
-        weights = weights / (weights.sum() + 1e-8)
-        return torch.sum(weights * cr_loss)
-
-    # focal weighting: idea, basically weighting harder samples more
-    elif method == Method.FOCAL:
-        gamma = 2.0
-        weights = cr_loss**gamma
-        weights = weights / (weights.sum() + 1e-8)
-        return torch.sum(weights * cr_loss)
-    
-    # Ranked based weighting: idea, basically weighting samples based on their rank in the loss distribution, with a power law decay
-    elif method == Method.RANKED:
-        alpha = 2.0
-        bs = cr_loss.size(0)
-        ranks = torch.argsort(torch.argsort(cr_loss)) + 1
-        weights = ranks.float() ** alpha
-        weights = weights / weights.sum()
-        return torch.sum(weights * cr_loss)
-
-
-    else:
-        raise ValueError(f"Unknown method: {method}")
 
 
 def lr_decay_func(optimizer, lr_decay=0.1):
