@@ -37,3 +37,5 @@ Make a Branch for any changes you make, and make sure to pull from main before m
 - feat: Significant change, when something major is added, like a new method
 - wip: should only be done in branches, only do if you're logging off so that other people dont work off or merge a branch with a wip: tag at the end
 - bug: small bugfix, one line changes that have little significance
+
+lmao - philip
