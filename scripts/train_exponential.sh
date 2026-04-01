@@ -15,4 +15,4 @@ cd /home/$USER/scratch/cs587-project
 ml conda
 conda activate ./env
 
-python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=2
+python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=kl_dro

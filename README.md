@@ -29,6 +29,8 @@ python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=5
 
 ## Standards and conventiosn for GitHub Versioning
 
+Make a Branch for any changes you make, and make sure to pull from main before merging
+
 [version type]: [what the version did]
 
 - fix: Small change that has significance, not a bug fix but should be no more than a few lines
