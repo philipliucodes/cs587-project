@@ -27,6 +27,10 @@ python main.py --dataset=cifar10 --data-aug=0 --model=PreActResNet18 --method=5
 
 ## Refer to the scripts/ folder to use preset configs and commands for each experiment
 
+## Results spreadsheet:
+
+https://docs.google.com/spreadsheets/d/13KIs9MW9vxbXJuRSmbiARtOgyo9ryx0OXyWUULaBZ3Q/edit?usp=sharing
+
 ## Standards and conventiosn for GitHub Versioning
 
 Make a Branch for any changes you make, and make sure to pull from main before merging
@@ -38,4 +42,4 @@ Make a Branch for any changes you make, and make sure to pull from main before m
 - wip: should only be done in branches, only do if you're logging off so that other people dont work off or merge a branch with a wip: tag at the end
 - bug: small bugfix, one line changes that have little significance
 
-lmao - philip
+daddy - philip
