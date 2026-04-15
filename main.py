@@ -8,10 +8,14 @@ from torchvision import datasets, transforms
 from torch.utils.data.sampler import SubsetRandomSampler
 
 import os
+import ssl
 from itertools import count
 import time
 import random
 import numpy as np
+
+# Workaround for SSL certificate verification failures on HPC clusters
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from models.models import *
 from models.preact_resnet import *
