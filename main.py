@@ -9,6 +9,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 import os
 import ssl
+import socket
 from itertools import count
 import time
 import random
@@ -16,6 +17,9 @@ import numpy as np
 
 # Workaround for SSL certificate verification failures on HPC clusters
 ssl._create_default_https_context = ssl._create_unverified_context
+
+# Increase socket timeout for slower/flaky network connections
+socket.setdefaulttimeout(60)
 
 from models.models import *
 from models.preact_resnet import *
@@ -31,6 +35,24 @@ from methods import (
 )
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Helper function for KMNIST download with retry logic
+def download_kmnist_with_retry(data_path, train=True, transform=None, max_retries=3):
+    """Download KMNIST with retry logic for flaky network connections."""
+    for attempt in range(max_retries):
+        try:
+            return datasets.KMNIST(
+                data_path, train=train, download=True, transform=transform
+            )
+        except (RuntimeError, socket.timeout) as e:
+            if attempt < max_retries - 1:
+                print(f"KMNIST download attempt {attempt + 1} failed, retrying...")
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                print(f"Failed to download KMNIST after {max_retries} attempts.")
+                print("Tip: You can manually download from http://codh.rois.ac.jp/kmnist/dataset/kmnist/")
+                print(f"     and extract to {data_path}")
+                raise
 
 # == parser start
 parser = argparse.ArgumentParser(description="PyTorch")
@@ -235,12 +257,8 @@ elif args.dataset == "kmnist":
         train_transform = transforms.Compose(
             [transforms.RandomCrop(28, padding=2), transforms.ToTensor()]
         )
-    train_data = datasets.KMNIST(
-        data_path, train=True, download=True, transform=train_transform
-    )
-    test_data = datasets.KMNIST(
-        data_path, train=False, download=True, transform=test_transform
-    )
+    train_data = download_kmnist_with_retry(data_path, train=True, transform=train_transform)
+    test_data = download_kmnist_with_retry(data_path, train=False, transform=test_transform)
 elif args.dataset == "semeion":
     nh = 16
     nw = 16

@@ -45,7 +45,9 @@ def select_training_loss(cr_loss, method, ssize):
 
     elif method == Method.KLDRO:
         tau = 1.0
-        weights = torch.softmax(cr_loss / tau, dim=0)
+        # Normalize losses to prevent numerical overflow in softmax
+        cr_loss_norm = cr_loss - cr_loss.max().detach()
+        weights = torch.softmax(cr_loss_norm / tau, dim=0)
         return torch.sum(weights * cr_loss)
 
     elif method == Method.ZSCORE:
@@ -58,7 +60,9 @@ def select_training_loss(cr_loss, method, ssize):
 
     elif method == Method.FOCAL:
         gamma = 2.0
-        weights = cr_loss ** gamma
+        # Clip losses to prevent numerical overflow in power operation
+        cr_loss_clipped = torch.clamp(cr_loss, max=10.0)
+        weights = cr_loss_clipped ** gamma
         weights = weights / (weights.sum() + 1e-8)
         return torch.sum(weights * cr_loss)
 
