@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/scratch/scholar/okington/cs587-project/main.py", line 237, in <module>
+    train_data = datasets.KMNIST(
+  File "/scratch/scholar/okington/cs587-project/env/lib/python3.10/site-packages/torchvision/datasets/mnist.py", line 100, in __init__
+    self.download()
+  File "/scratch/scholar/okington/cs587-project/env/lib/python3.10/site-packages/torchvision/datasets/mnist.py", line 197, in download
+    raise RuntimeError(s)
+RuntimeError: Error downloading train-images-idx3-ubyte.gz:
+Tried http://codh.rois.ac.jp/kmnist/dataset/kmnist/, got:
+<urlopen error [Errno 110] Connection timed out>
+

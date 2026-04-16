@@ -1,0 +1,2 @@
+Namespace(job_id=1, seed=5, test_batch_size=100, momentum=0.9, weight_decay=0.0001, data_path='./dataset/', dataset='svhn', data_aug=0, model='PreActResNet18', lr=0.01, batch_size=64, ssize=64, method=<Method.ZSCORE: 3>)
+initial seed = 5
