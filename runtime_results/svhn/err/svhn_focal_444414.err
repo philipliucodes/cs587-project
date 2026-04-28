@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "/scratch/scholar/okington/cs587-project/main.py", line 199, in <module>
-    train_data = datasets.SVHN(
-  File "/scratch/scholar/okington/cs587-project/env/lib/python3.10/site-packages/torchvision/datasets/svhn.py", line 76, in __init__
-    import scipy.io as sio
-ModuleNotFoundError: No module named 'scipy'
