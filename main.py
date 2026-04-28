@@ -38,21 +38,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Helper function for KMNIST download with retry logic
 def download_kmnist_with_retry(data_path, train=True, transform=None, max_retries=3):
-    """Download KMNIST with retry logic for flaky network connections."""
-    for attempt in range(max_retries):
-        try:
-            return datasets.KMNIST(
-                data_path, train=train, download=True, transform=transform
-            )
-        except (RuntimeError, socket.timeout) as e:
-            if attempt < max_retries - 1:
-                print(f"KMNIST download attempt {attempt + 1} failed, retrying...")
-                time.sleep(2 ** attempt)  # Exponential backoff
-            else:
-                print(f"Failed to download KMNIST after {max_retries} attempts.")
-                print("Tip: You can manually download from http://codh.rois.ac.jp/kmnist/dataset/kmnist/")
-                print(f"     and extract to {data_path}")
-                raise
+  datasets.KMNIST.resources = [
+    ("https://github.com/rois-codh/kmnist/releases/download/v1.0/train-images-idx3-ubyte.gz", "3a1abcb52f75841ccba5b035fcebe43f"),
+    ("https://github.com/rois-codh/kmnist/releases/download/v1.0/train-labels-idx1-ubyte.gz", "3750059e663a763ba2f2ff0d62dcc5dc"),
+    ("https://github.com/rois-codh/kmnist/releases/download/v1.0/t10k-images-idx3-ubyte.gz", "f9f72b7ff909405d15c1e2954a323315"),
+    ("https://github.com/rois-codh/kmnist/releases/download/v1.0/t10k-labels-idx1-ubyte.gz", "e8fce47c7c34b1dc7dc94aa7d93416ce")
+  ]
+  for attempt in range(max_retries):
+    try:
+      return datasets.KMNIST(
+        data_path, train=train, download=True, transform=transform
+      )
+    except Exception:
+      if attempt < max_retries - 1:
+        time.sleep(2 ** attempt)
+      else:
+        raise
 
 # == parser start
 parser = argparse.ArgumentParser(description="PyTorch")
@@ -378,35 +379,36 @@ ssize = args.ssize
 
 
 def train(epoch):
-    global optimizer, ssize
-    model.train()
-    optimizer = lr_scheduler(optimizer, epoch)
+  global optimizer, ssize
+  model.train()
+  optimizer = lr_scheduler(optimizer, epoch)
 
-    train_acc_prev = pl_result[epoch - 1, 0, 1]
-    if train_acc_prev >= 99.5 and ssize > 4:
-        ssize = 4
-        optimizer = lr_decay_func(optimizer, lr_decay=0.5)
-    elif train_acc_prev >= 95 and ssize > 8:
-        ssize = 8
-    elif train_acc_prev >= 90 and ssize > 16:
-        ssize = 16
-    elif train_acc_prev >= 80 and ssize > 32:
-        ssize = 32
+  train_acc_prev = pl_result[epoch - 1, 0, 1]
+  if train_acc_prev >= 99.5 and ssize > 4:
+    ssize = 4
+    optimizer = lr_decay_func(optimizer, lr_decay=0.5)
+  elif train_acc_prev >= 95 and ssize > 8:
+    ssize = 8
+  elif train_acc_prev >= 90 and ssize > 16:
+    ssize = 16
+  elif train_acc_prev >= 80 and ssize > 32:
+    ssize = 32
 
-    for batch_idx, (x, y) in enumerate(train_loader):
-        x = x.to(device)
-        y = y.to(device)
-        h1 = model(x)
-        if args.model == "SVM":
-            cr_loss = hinge_loss(h1, y)
-        else:
-            cr_loss = F.cross_entropy(h1, y, reduction="none")
+  for batch_idx, (x, y) in enumerate(train_loader):
+    x = x.to(device)
+    y = y.to(device)
+    h1 = model(x)
+    if args.model == "SVM":
+      cr_loss = hinge_loss(h1, y)
+    else:
+      cr_loss = F.cross_entropy(h1, y, reduction="none")
 
-        loss = select_training_loss(cr_loss, args.method, ssize)
+    loss = select_training_loss(cr_loss, args.method, ssize)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    optimizer.zero_grad()
+    loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
+    optimizer.step()
 
 
 # ===============================================================
